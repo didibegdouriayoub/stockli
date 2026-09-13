@@ -732,9 +732,10 @@ input[type='number'] { -moz-appearance: textfield; }
   top: 0;
   z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px 10px;
   padding: 9px 16px;
   padding-top: max(9px, env(safe-area-inset-top));
   background: var(--warn-soft);
@@ -744,6 +745,7 @@ input[type='number'] { -moz-appearance: textfield; }
   text-align: center;
 }
 .subscription-banner.lapsed { background: var(--danger-soft); color: #8A1C13; }
+.subscription-banner-link { color: inherit; text-decoration: underline; white-space: nowrap; }
 
 /* ==========================================================================
    سجل المبيعات
@@ -770,6 +772,19 @@ input[type='number'] { -moz-appearance: textfield; }
   cursor: pointer;
   flex-shrink: 0;
 }
+
+/* ==========================================================================
+   لوحة المشرف
+   ========================================================================== */
+.admin-store-row { padding: 14px; }
+.admin-store-row.suspended { border-color: var(--danger); background: var(--danger-soft); }
+.admin-store-name { font-weight: 700; }
+.admin-suspended-tag { color: var(--danger); font-weight: 700; font-size: 0.85rem; margin-top: 4px; }
+.admin-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.admin-actions .btn { flex: 1 1 auto; }
+.admin-plan-row { margin-top: 6px; color: var(--text-muted); }
+
+.plan-choice-btn { display: flex; align-items: center; justify-content: space-between; }
 
 /* ==========================================================================
    احترام تفضيل تقليل الحركة

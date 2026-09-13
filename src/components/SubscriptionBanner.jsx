@@ -1,5 +1,6 @@
 import { useStore } from '../lib/StoreContext'
 import { getSubscriptionStatus } from '../lib/subscription'
+import { supportWhatsappLink } from '../lib/contact'
 
 /**
  * تنبيه لطيف (وليس قفلاً) يظهر فقط عندما تقترب التجربة/الاشتراك من الانتهاء
@@ -17,17 +18,22 @@ export default function SubscriptionBanner() {
 
   let message
   if (lapsed) {
-    message = `انتهت ${what}. تواصل معنا لتفعيل الدفع ومواصلة استعمال التطبيق.`
+    message = `انتهت ${what}.`
   } else if (status.daysLeft <= 0) {
     message = `تنتهي ${what} اليوم.`
   } else {
     message = `تنتهي ${what} خلال ${status.daysLeft} ${status.daysLeft === 1 ? 'يوم' : 'أيام'}.`
   }
 
+  const waLink = supportWhatsappLink(`مرحباً، محلي "${store.name}" — أريد تجديد الاشتراك.`)
+
   return (
     <div className={'subscription-banner' + (lapsed ? ' lapsed' : '')}>
       <span aria-hidden="true">{lapsed ? '⛔' : '⏳'}</span>
       <span>{message}</span>
+      <a href={waLink} target="_blank" rel="noreferrer" className="subscription-banner-link">
+        💬 تواصل معنا للدفع
+      </a>
     </div>
   )
 }

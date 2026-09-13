@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from './lib/supabaseClient'
 import { AuthProvider } from './lib/AuthContext'
 import { StoreProvider } from './lib/StoreContext'
 import RequireAuth from './components/RequireAuth'
+import RequireAdmin from './components/RequireAdmin'
 import PublicOnly from './components/PublicOnly'
 import AppShell from './components/AppShell'
 import LoadingScreen from './components/LoadingScreen'
@@ -17,6 +18,7 @@ const StockPage = lazy(() => import('./pages/StockPage'))
 const HistoryPage = lazy(() => import('./pages/HistoryPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const ProductFormPage = lazy(() => import('./pages/ProductFormPage'))
+const AdminStoresPage = lazy(() => import('./pages/AdminStoresPage'))
 
 export default function App() {
   if (!isSupabaseConfigured) return <ConfigMissingPage />
@@ -66,6 +68,17 @@ export default function App() {
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
               </Route>
+
+              <Route
+                path="/admin"
+                element={
+                  <RequireAuth>
+                    <RequireAdmin>
+                      <AdminStoresPage />
+                    </RequireAdmin>
+                  </RequireAuth>
+                }
+              />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

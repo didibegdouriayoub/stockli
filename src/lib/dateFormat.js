@@ -20,6 +20,13 @@ export function dayLabel(isoString) {
   return `${d.getDate()} ${MONTHS_MA[d.getMonth()]} ${d.getFullYear()}`
 }
 
+/** "12 شتنبر 2026" — تاريخ مطلق دائماً (بخلاف dayLabel، لا يستعمل "اليوم/أمس"). */
+export function absoluteDateLabel(isoString) {
+  if (!isoString) return '—'
+  const d = new Date(isoString)
+  return `${d.getDate()} ${MONTHS_MA[d.getMonth()]} ${d.getFullYear()}`
+}
+
 /** "٣:٤٥ م" بصيغة 12 ساعة بأرقام غربية — أسهل قراءة لغير المتخصصين من 24 ساعة. */
 export function timeLabel(isoString) {
   const d = new Date(isoString)

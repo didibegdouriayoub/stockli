@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchSalesSince, summarizeSales, fetchLowStockProducts, startOfToday, sevenDaysAgo } from '../lib/dashboard'
 import { formatPrice } from '../lib/format'
+import { supportWhatsappLink } from '../lib/contact'
 import { useAuth } from '../lib/AuthContext'
+import { useStore } from '../lib/StoreContext'
 import PageHeader from '../components/PageHeader'
 
 const PERIODS = [
@@ -12,6 +14,7 @@ const PERIODS = [
 
 export default function DashboardPage() {
   const { signOut } = useAuth()
+  const { store } = useStore()
 
   const [period, setPeriod] = useState('today')
   const [stats, setStats] = useState(undefined) // { revenue, units, topProducts }
@@ -161,6 +164,16 @@ export default function DashboardPage() {
           </ul>
         )}
       </section>
+
+      <a
+        href={supportWhatsappLink(store ? `مرحباً، أحتاج مساعدة بخصوص محلي "${store.name}".` : undefined)}
+        target="_blank"
+        rel="noreferrer"
+        className="btn btn-secondary btn-block"
+        style={{ marginTop: 8 }}
+      >
+        💬 تواصل مع الدعم
+      </a>
 
       <button className="btn btn-ghost btn-block" onClick={signOut} style={{ color: 'var(--text-muted)', marginTop: 8 }}>
         تسجيل الخروج
