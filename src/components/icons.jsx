@@ -77,6 +77,16 @@ export function IconSearch(props) {
   )
 }
 
+export function IconStore(props) {
+  return (
+    <svg {...common} {...props}>
+      <path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2l1 5a2.5 2.5 0 0 1-4 2 2.5 2.5 0 0 1-4 0 2.5 2.5 0 0 1-4 0 2.5 2.5 0 0 1-4 0 2.5 2.5 0 0 1-4-2Z" />
+      <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+      <path d="M9 20v-5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5" />
+    </svg>
+  )
+}
+
 export function IconWarning(props) {
   return (
     <svg {...common} {...props}>

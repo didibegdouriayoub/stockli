@@ -5,6 +5,7 @@ import { useStore } from '../lib/StoreContext'
 import { CATEGORIES } from '../lib/categories'
 import { uploadProductImage, deleteProductImageByUrl } from '../lib/productImages'
 import { lookupBarcode } from '../lib/upcLookup'
+import { fetchProductAltBarcodes, addAltBarcode, deleteAltBarcode, findExistingProductByBarcode } from '../lib/barcodes'
 import { generateStickerCode } from '../lib/stickerCode'
 import { translateProductError } from '../lib/productErrors'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -47,10 +48,15 @@ export default function ProductFormPage() {
   const [imageRemoved, setImageRemoved] = useState(false)
 
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [scanMode, setScanMode] = useState('primary') // 'primary' | 'alt'
   const [lookupLoading, setLookupLoading] = useState(false)
   const [lookupBanner, setLookupBanner] = useState(null)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [stickerCode, setStickerCode] = useState(null)
+
+  const [altBarcodes, setAltBarcodes] = useState([])
+  const [altBusy, setAltBusy] = useState(false)
+  const [altError, setAltError] = useState('')
 
   const justScanned = Boolean(location.state?.justScanned)
 
@@ -82,6 +88,12 @@ export default function ProductFormPage() {
         setExistingImageUrl(data.image_url)
         setLoading(false)
       })
+
+    fetchProductAltBarcodes(id)
+      .then((rows) => {
+        if (!cancelled) setAltBarcodes(rows)
+      })
+      .catch(() => {})
 
     return () => {
       cancelled = true
@@ -118,7 +130,7 @@ export default function ProductFormPage() {
 
       setLookupLoading(true)
 
-      const { data: existing } = await supabase.from('products').select('id, name').eq('barcode', code).maybeSingle()
+      const existing = await findExistingProductByBarcode(code)
 
       if (existing) {
         setLookupLoading(false)
@@ -153,7 +165,69 @@ export default function ProductFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ---- إضافة باركود بديل لمنتج موجود (نفس القطعة وصلت برمز مختلف) ----
+  const handleAltScanDetected = useCallback(
+    async (code) => {
+      setScannerOpen(false)
+      setAltError('')
+
+      if (!store) {
+        setAltError('جارٍ تحميل بيانات محلك. حاول مرة أخرى خلال لحظات.')
+        return
+      }
+      if (code === form.barcode) {
+        setAltError('هذا هو نفس الباركود الرئيسي لهذا المنتج بالفعل.')
+        return
+      }
+      if (altBarcodes.some((b) => b.barcode === code)) {
+        setAltError('هذا الباركود مضاف بالفعل لهذا المنتج.')
+        return
+      }
+
+      setAltBusy(true)
+      const existing = await findExistingProductByBarcode(code)
+      if (existing && existing.id !== id) {
+        setAltBusy(false)
+        setAltError(`هذا الباركود مستعمل بالفعل مع منتج آخر: "${existing.name}".`)
+        return
+      }
+
+      try {
+        const row = await addAltBarcode(store.id, id, code)
+        setAltBarcodes((prev) => [...prev, row])
+      } catch {
+        setAltError('تعذّر إضافة الباركود. حاول مرة أخرى.')
+      } finally {
+        setAltBusy(false)
+      }
+    },
+    [form.barcode, altBarcodes, id, store]
+  )
+
+  async function handleDeleteAltBarcode(barcodeId) {
+    setAltBusy(true)
+    try {
+      await deleteAltBarcode(barcodeId)
+      setAltBarcodes((prev) => prev.filter((b) => b.id !== barcodeId))
+    } catch {
+      setAltError('تعذّر حذف الباركود. حاول مرة أخرى.')
+    } finally {
+      setAltBusy(false)
+    }
+  }
+
+  function openScanner(mode) {
+    setScanMode(mode)
+    setScannerOpen(true)
+  }
+
+  function handleAnyScanDetected(code) {
+    if (scanMode === 'alt') handleAltScanDetected(code)
+    else handleScanDetected(code)
+  }
+
   function handleGenerateCode() {
+    if (!store) return
     const code = generateStickerCode(store.id)
     setField('barcode', code)
     setLookupBanner(null)
@@ -176,6 +250,10 @@ export default function ProductFormPage() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (!store) {
+      setFormError('جارٍ تحميل بيانات محلك. أعد المحاولة خلال لحظات.')
+      return
+    }
     const errors = validate()
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
@@ -354,7 +432,7 @@ export default function ProductFormPage() {
             <button
               type="button"
               className="btn btn-secondary barcode-scan-btn"
-              onClick={() => setScannerOpen(true)}
+              onClick={() => openScanner('primary')}
               aria-label="مسح الباركود"
             >
               📷
@@ -384,6 +462,47 @@ export default function ProductFormPage() {
             </button>
           )}
         </div>
+
+        {isEdit && (
+          <div className="field">
+            <label>باركودات إضافية</label>
+            <p className="hint">
+              إذا وصلت نفس القطعة بباركود مختلف (دفعة أخرى من المورّد مثلاً)، أضفه هنا حتى يعمل المسح بأي منهما.
+            </p>
+
+            {altBarcodes.length > 0 && (
+              <ul className="stack-sm alt-barcode-list">
+                {altBarcodes.map((b) => (
+                  <li key={b.id} className="row-between alt-barcode-row">
+                    <span dir="ltr" className="num">
+                      {b.barcode}
+                    </span>
+                    <button
+                      type="button"
+                      className="alt-barcode-delete"
+                      onClick={() => handleDeleteAltBarcode(b.id)}
+                      disabled={altBusy}
+                      aria-label={`حذف الباركود ${b.barcode}`}
+                    >
+                      حذف
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {altError && <p className="field-error">{altError}</p>}
+
+            <button
+              type="button"
+              className="link-action"
+              onClick={() => openScanner('alt')}
+              disabled={altBusy}
+            >
+              📷 مسح لإضافة باركود بديل
+            </button>
+          </div>
+        )}
 
         <div className="field">
           <label>صورة المنتج</label>
@@ -417,7 +536,7 @@ export default function ProductFormPage() {
       </form>
 
       <Suspense fallback={null}>
-        {scannerOpen && <BarcodeScanner onDetect={handleScanDetected} onClose={() => setScannerOpen(false)} />}
+        {scannerOpen && <BarcodeScanner onDetect={handleAnyScanDetected} onClose={() => setScannerOpen(false)} />}
 
         {stickerCode && (
           <QrStickerModal code={stickerCode} productName={form.name} onClose={() => setStickerCode(null)} />

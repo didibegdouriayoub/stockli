@@ -342,7 +342,23 @@ input[type='number'] { -moz-appearance: textfield; }
    رأس الصفحة
    ========================================================================== */
 .page-header { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-.store-badge { max-width: 60%; }
+
+.store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 80%;
+  padding: 9px 18px 9px 15px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary-soft), var(--surface));
+  border: 1px solid var(--primary-soft);
+  color: var(--primary-dark);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-sm);
+}
+.store-badge-icon { flex: 0 0 auto; color: var(--primary); width: 20px; height: 20px; }
 
 /* زر عائم لإضافة عنصر جديد (مثال: زر + في شاشة المخزون) */
 .fab {
@@ -504,6 +520,22 @@ input[type='number'] { -moz-appearance: textfield; }
 .barcode-row { display: flex; gap: 8px; }
 .barcode-row .input { flex: 1; }
 .barcode-scan-btn { flex: 0 0 var(--tap); width: var(--tap); padding: 0; }
+
+.alt-barcode-list { margin: 4px 0; }
+.alt-barcode-row {
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+.alt-barcode-delete {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
 
 .link-action {
   background: none;

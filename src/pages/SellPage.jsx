@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { CATEGORIES, categoryIcon } from '../lib/categories'
 import { formatPrice } from '../lib/format'
 import { sellOne, undoSale } from '../lib/sales'
+import { fetchAltBarcodes, findProductByBarcode } from '../lib/barcodes'
 import PageHeader from '../components/PageHeader'
 import AdjustPriceDialog from '../components/AdjustPriceDialog'
 import { IconSearch } from '../components/icons'
@@ -15,6 +16,7 @@ const UNDO_MS = 5000
 
 export default function SellPage() {
   const [products, setProducts] = useState(undefined)
+  const [altBarcodes, setAltBarcodes] = useState([])
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState(ALL)
@@ -31,18 +33,22 @@ export default function SellPage() {
   useEffect(() => {
     productsRef.current = products
   }, [products])
+  const altBarcodesRef = useRef(altBarcodes)
+  useEffect(() => {
+    altBarcodesRef.current = altBarcodes
+  }, [altBarcodes])
 
   useEffect(() => {
     let cancelled = false
-    supabase
-      .from('products')
-      .select('*')
-      .order('name', { ascending: true })
-      .then(({ data, error: fetchError }) => {
-        if (cancelled) return
-        if (fetchError) setError(fetchError)
-        else setProducts(data)
-      })
+    Promise.all([
+      supabase.from('products').select('*').order('name', { ascending: true }),
+      fetchAltBarcodes().catch(() => []),
+    ]).then(([{ data, error: fetchError }, altResult]) => {
+      if (cancelled) return
+      if (fetchError) setError(fetchError)
+      else setProducts(data)
+      setAltBarcodes(altResult)
+    })
     return () => {
       cancelled = true
     }
@@ -98,8 +104,7 @@ export default function SellPage() {
   const handleScanSell = useCallback(
     async (code) => {
       setScannerOpen(false)
-      const list = productsRef.current || []
-      const product = list.find((p) => p.barcode === code)
+      const product = findProductByBarcode(productsRef.current || [], altBarcodesRef.current || [], code)
 
       if (!product) {
         showNotice('warn', 'لم نجد منتجاً بهذا الباركود في مخزونك.')
@@ -109,9 +114,9 @@ export default function SellPage() {
         showNotice('warn', `نفدت كمية "${product.name}".`)
         return
       }
-      handleSell(product)
+      setAdjustTarget(product)
     },
-    [handleSell]
+    []
   )
 
   async function handleConfirmAdjustSell(customPrice) {
