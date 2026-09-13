@@ -12,7 +12,7 @@ export async function checkIsAdmin(userId) {
 export async function fetchAllStoresForAdmin() {
   const { data, error } = await supabase
     .from('stores')
-    .select('id, name, phone, owner_id, created_at, trial_ends_at, paid_until, suspended, plan')
+    .select('id, name, phone, owner_id, created_at, trial_ends_at, paid_until, suspended, plan, approved')
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -22,6 +22,20 @@ export async function fetchAllStoresForAdmin() {
 export async function setStoreSuspended(storeId, suspended) {
   const { error } = await supabase.from('stores').update({ suspended }).eq('id', storeId)
   if (error) throw error
+}
+
+/** يوافق على محل جديد ويبدأ عدّاد التجربة المجانية (يومين) من هذه اللحظة بالذات. */
+export async function approveStore(storeId) {
+  const trialEndsAt = new Date()
+  trialEndsAt.setDate(trialEndsAt.getDate() + 2)
+
+  const { error } = await supabase
+    .from('stores')
+    .update({ approved: true, trial_ends_at: trialEndsAt.toISOString() })
+    .eq('id', storeId)
+
+  if (error) throw error
+  return trialEndsAt.toISOString()
 }
 
 /**

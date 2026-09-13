@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchAllStoresForAdmin, setStoreSuspended, renewStorePlan } from '../lib/admin'
+import { fetchAllStoresForAdmin, setStoreSuspended, renewStorePlan, approveStore } from '../lib/admin'
 import { resetStorePassword } from '../lib/adminApi'
 import { getSubscriptionStatus } from '../lib/subscription'
 import { formatPhoneDisplay } from '../lib/phone'
@@ -84,11 +84,27 @@ export default function AdminStoresPage() {
     }
   }
 
+  async function handleApprove(store) {
+    setBusyId(store.id)
+    try {
+      const trialEndsAt = await approveStore(store.id)
+      setStores((prev) => prev.map((s) => (s.id === store.id ? { ...s, approved: true, trial_ends_at: trialEndsAt } : s)))
+      showNotice('info', `تم قبول "${store.name}". تبدأ تجربته المجانية الآن، تنتهي في ${absoluteDateLabel(trialEndsAt)}.`)
+    } catch {
+      showNotice('danger', 'تعذّر القبول. حاول مرة أخرى.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   // محل المشرف نفسه (يُنشأ تلقائياً كأي حساب جديد) ليس محلاً حقيقياً لزبون —
   // لا نعرضه في القائمة، وأهم من ذلك: لا نسمح بتعليقه (سيقفل المشرف نفسه خارج التطبيق).
   const realStores = (stores ?? []).filter((s) => s.owner_id !== user?.id)
 
-  const sorted = [...realStores].sort((a, b) => {
+  const pendingStores = realStores.filter((s) => !s.approved)
+  const approvedStores = realStores.filter((s) => s.approved)
+
+  const sorted = [...approvedStores].sort((a, b) => {
     const sa = getSubscriptionStatus(a)
     const sb = getSubscriptionStatus(b)
     return STATUS_ORDER[sa.state] - STATUS_ORDER[sb.state]
@@ -120,6 +136,45 @@ export default function AdminStoresPage() {
           <div className="empty-icon">🏪</div>
           <h3>لا توجد محلات بعد</h3>
         </div>
+      )}
+
+      {pendingStores.length > 0 && (
+        <section style={{ marginBottom: 22 }}>
+          <h3 style={{ marginBottom: 10 }}>🆕 بانتظار الموافقة ({pendingStores.length})</h3>
+          <ul className="stack-sm">
+            {pendingStores.map((store) => {
+              const phoneDisplay = store.phone ? formatPhoneDisplay(store.phone) : '—'
+              const waLink = store.phone ? `https://wa.me/212${store.phone.replace(/^0/, '')}` : null
+
+              return (
+                <li key={store.id} className="card admin-store-row pending">
+                  <div className="row-between">
+                    <span className="truncate admin-store-name">{store.name}</span>
+                    <span className="badge badge-info">جديد</span>
+                  </div>
+                  <p className="muted small num" dir="ltr" style={{ textAlign: 'end' }}>
+                    {phoneDisplay}
+                  </p>
+                  <div className="admin-actions">
+                    {waLink && (
+                      <a href={waLink} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
+                        💬 واتساب
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      disabled={busyId === store.id}
+                      onClick={() => handleApprove(store)}
+                    >
+                      {busyId === store.id ? '...' : '✅ قبول'}
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
       )}
 
       {sorted.length > 0 && (

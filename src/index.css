@@ -778,6 +778,7 @@ input[type='number'] { -moz-appearance: textfield; }
    ========================================================================== */
 .admin-store-row { padding: 14px; }
 .admin-store-row.suspended { border-color: var(--danger); background: var(--danger-soft); }
+.admin-store-row.pending { border-color: var(--info); background: var(--info-soft); }
 .admin-store-name { font-weight: 700; }
 .admin-suspended-tag { color: var(--danger); font-weight: 700; font-size: 0.85rem; margin-top: 4px; }
 .admin-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

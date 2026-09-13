@@ -11,5 +11,12 @@ insert into public.admins (user_id)
 select id from auth.users where email = '0639959512@stockli.app'
 on conflict (user_id) do nothing;
 
+-- محلات المشرفين لا تظهر أصلاً في لوحة المشرف (مستبعدة في الكود)، لكن نوافق
+-- عليها هنا احتياطاً حتى لا يحجبها RequireAuth لو دخل المشرف بحساب حديث
+-- الإنشاء لم يوافق عليه أحد بعد (مشكلة "من يوافق على أول مشرف؟").
+update public.stores
+set approved = true
+where owner_id = (select id from auth.users where email = '0639959512@stockli.app');
+
 -- للتحقق:
 -- select u.email, a.created_at from public.admins a join auth.users u on u.id = a.user_id;
