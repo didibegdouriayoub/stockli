@@ -427,6 +427,9 @@ input[type='number'] { -moz-appearance: textfield; }
 .scanner-hint { color: #fff; opacity: 0.85; }
 .scanner-error { display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center; color: #fff; max-width: 320px; }
 
+.scanner-gallery-btn { position: relative; overflow: hidden; margin-top: 18px; }
+.scanner-gallery-btn input[type='file'] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
 /* ==========================================================================
    نوافذ منبثقة عامة (تأكيد، ملصق QR...)
    ========================================================================== */

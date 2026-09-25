@@ -518,7 +518,8 @@ export default function ProductFormPage() {
                 <span>اضغط هنا لإضافة صورة المنتج</span>
               </>
             )}
-            <input type="file" accept="image/*" capture="environment" onChange={handleImageChange} />
+            {/* بدون capture: يفتح المتصفح خيار "التقط صورة" أو "اختر من المعرض" معاً، بدل فتح الكاميرا مباشرة */}
+            <input type="file" accept="image/*" onChange={handleImageChange} />
           </label>
         </div>
 

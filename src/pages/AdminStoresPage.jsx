@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchAllStoresForAdmin, setStoreSuspended, renewStorePlan, approveStore } from '../lib/admin'
-import { resetStorePassword } from '../lib/adminApi'
+import { resetStorePassword, deleteStoreAccount } from '../lib/adminApi'
 import { getSubscriptionStatus } from '../lib/subscription'
 import { formatPhoneDisplay } from '../lib/phone'
 import { absoluteDateLabel } from '../lib/dateFormat'
@@ -25,6 +25,7 @@ export default function AdminStoresPage() {
   const [notice, setNotice] = useState(null)
   const [resetTarget, setResetTarget] = useState(null)
   const [renewTarget, setRenewTarget] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const noticeTimerRef = useRef(null)
 
   async function load() {
@@ -231,6 +232,14 @@ export default function AdminStoresPage() {
                   >
                     {store.suspended ? '✅ تفعيل' : '⛔ تعليق'}
                   </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    disabled={busyId === store.id}
+                    onClick={() => setDeleteTarget(store)}
+                  >
+                    🗑 حذف نهائي
+                  </button>
                 </div>
               </li>
             )
@@ -256,6 +265,19 @@ export default function AdminStoresPage() {
           busy={busyId === renewTarget.id}
           onChoose={(planKey) => handleRenew(renewTarget, planKey)}
           onClose={() => setRenewTarget(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteStoreDialog
+          store={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDone={() => {
+            setStores((prev) => prev.filter((s) => s.id !== deleteTarget.id))
+            showNotice('info', `تم حذف محل "${deleteTarget.name}" نهائياً.`)
+            setDeleteTarget(null)
+          }}
+          onFail={(msg) => showNotice('danger', msg)}
         />
       )}
     </div>
@@ -303,6 +325,58 @@ function ResetPasswordDialog({ store, onClose, onDone, onFail }) {
           </button>
           <button type="button" className="btn btn-primary grow" onClick={handleConfirm} disabled={busy || invalid}>
             {busy ? '...' : 'تأكيد'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DeleteStoreDialog({ store, onClose, onDone, onFail }) {
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const matches = typed.trim() === store.name.trim()
+
+  async function handleConfirm() {
+    if (!matches) return
+    setBusy(true)
+    try {
+      await deleteStoreAccount(store.owner_id)
+      onDone()
+    } catch (err) {
+      onFail(err.message || 'تعذّر حذف المحل.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="dialog-overlay" role="dialog" aria-modal="true" aria-label="حذف المحل نهائياً">
+      <div className="dialog-card">
+        <div className="dialog-icon" aria-hidden="true">
+          ⚠️
+        </div>
+        <h3 className="center">حذف "{store.name}" نهائياً؟</h3>
+        <p className="muted center small">
+          سيُحذف هذا المحل وكل منتجاته وسجل مبيعاته نهائياً، ولن يستطيع صاحبه تسجيل الدخول بعد الآن. لا يمكن التراجع عن هذا الإجراء.
+        </p>
+        <p className="center small" style={{ fontWeight: 600 }}>
+          للتأكيد، اكتب اسم المحل بالضبط: <span className="num">{store.name}</span>
+        </p>
+        <input
+          className="input"
+          type="text"
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+          style={{ textAlign: 'center' }}
+          autoFocus
+        />
+        <div className="row dialog-actions">
+          <button type="button" className="btn btn-secondary grow" onClick={onClose} disabled={busy}>
+            إلغاء
+          </button>
+          <button type="button" className="btn btn-danger grow" onClick={handleConfirm} disabled={busy || !matches}>
+            {busy ? '...' : 'حذف نهائي'}
           </button>
         </div>
       </div>
